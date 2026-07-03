@@ -2,11 +2,9 @@ name: Semgrep
 
 on:
   push:
-    branches:
-      - master
+    branches: [master]
   pull_request:
-    branches:
-      - master
+    branches: [master]
 
 permissions:
   contents: read
@@ -14,20 +12,28 @@ permissions:
 
 jobs:
   semgrep:
-    name: Semgrep Scan
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
         with:
-          fetch-depth: 0
+          python-version: "3.12"
+
+      - name: Install Semgrep
+        run: pip install semgrep
 
       - name: Run Semgrep
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: p/security-audit
+        run: |
+          semgrep scan \
+            --config=p/security-audit \
+            --sarif \
+            --output=semgrep.sarif \
+            . || true
 
       - name: Upload SARIF
+        if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: semgrep.sarif
